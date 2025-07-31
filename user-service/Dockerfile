@@ -1,4 +1,5 @@
-FROM node:18
+# Use Node Alpine image
+FROM node:18-alpine
 
 WORKDIR /app
 
@@ -7,6 +8,8 @@ RUN npm install
 
 COPY . .
 
+RUN npm run build
+
 EXPOSE 5000
 
-CMD ["npm", "run", "dev"]
+CMD ["npm", "start"]

@@ -1,11 +1,7 @@
+// src/config/db.ts
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
 
-dotenv.config();
-
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://mongo:27017/youtube-users';
-
-export const connectDB = async () => {
+export const connectDB = async (MONGO_URI: string) => {
   try {
     await mongoose.connect(MONGO_URI);
     console.log('✅ MongoDB connected');
