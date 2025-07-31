@@ -17,17 +17,23 @@ const userSchema = new Schema<IUser>(
   { timestamps: true }
 );
 
-// Hash password before saving
+
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  const user = this as IUser;
+
+  if (!user.isModified('password')) return next();
+
   const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+  user.password = await bcrypt.hash(user.password, salt);
   next();
 });
 
-// Compare hashed password
-userSchema.methods.comparePassword = async function (candidatePassword: string) {
-  return bcrypt.compare(candidatePassword, this.password);
+// ✅ Compare hashed password method
+userSchema.methods.comparePassword = async function (
+  candidatePassword: string
+): Promise<boolean> {
+  const user = this as IUser;
+  return bcrypt.compare(candidatePassword, user.password);
 };
 
 export const User = mongoose.model<IUser>('User', userSchema);
