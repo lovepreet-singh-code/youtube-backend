@@ -61,3 +61,54 @@ export const updateProfile = async (
     res.status(500).json({ message: 'Profile update failed', error });
   }
 };
+
+export const logout = async (req: Request, res: Response) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1] || req.body.token;
+    if (!token) {
+      return res.status(400).json({ message: 'Token is required for logout' });
+    }
+    await userService.logoutUser(token);
+    res.status(200).json({ message: 'Logout successful' });
+  } catch (error) {
+    res.status(500).json({ message: 'Logout failed', error });
+  }
+};
+
+export const subscribe = async (req: Request & { userId?: string }, res: Response) => {
+  try {
+    const result = await userService.subscribeUser(req.userId!, req.params.id);
+    res.status(200).json({ message: result });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+    res.status(400).json({ message: errorMessage });
+  }
+};
+
+export const unsubscribe = async (req: Request & { userId?: string }, res: Response) => {
+  try {
+    const result = await userService.unsubscribeUser(req.userId!, req.params.id);
+    res.status(200).json({ message: result });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+    res.status(400).json({ message: errorMessage });
+  }
+};
+
+export const getAllSubscribers = async (req: Request, res: Response) => {
+  try {
+    const subscribers = await userService.getSubscribers(req.params.id);
+    res.status(200).json({ count: subscribers.length, subscribers });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to get subscribers', error });
+  }
+};
+
+export const getSubscribed = async (req: Request & { userId?: string }, res: Response) => {
+  try {
+    const subscriptions = await userService.getSubscribedChannels(req.userId!);
+    res.status(200).json({ subscriptions });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to get subscriptions', error });
+  }
+};

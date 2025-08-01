@@ -1,6 +1,6 @@
 import { User, IUser } from '../models/user.model';
 import jwt from 'jsonwebtoken';
-
+import redis from '../config/redis';
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
 export const registerUser = async (
@@ -30,8 +30,6 @@ export const getUserProfile = async (userId: string): Promise<IUser | null> => {
   return await User.findById(userId).select('-password');
 };
 
-
-
 export const updateUserProfile = async (
   userId: string,
   updates: Partial<IUser>
@@ -45,4 +43,61 @@ export const updateUserProfile = async (
 
   await user.save();
   return user;
+};
+
+export const logoutUser = async (token: string): Promise<boolean> => {
+  const decoded = jwt.decode(token) as { exp?: number };
+
+  if (decoded?.exp) {
+    const expiryInSec = decoded.exp - Math.floor(Date.now() / 1000);
+    await redis.setex(`bl_${token}`, expiryInSec, 'blacklisted');
+  }
+
+  return true;
+};
+
+export const subscribeUser = async (userId: string, targetId: string): Promise<string> => {
+  if (userId === targetId) throw new Error("Cannot subscribe to yourself");
+
+  const user = await User.findById(userId);
+  const target = await User.findById(targetId);
+
+  if (!user || !target) throw new Error("User not found");
+
+  if (user.subscribedTo.includes(target._id as any)) throw new Error("Already subscribed");
+
+  user.subscribedTo.push(target._id as import('mongoose').Types.ObjectId);
+  target.subscribers += 1;
+
+  await user.save();
+  await target.save();
+
+  return "Subscribed successfully";
+};
+
+export const unsubscribeUser = async (userId: string, targetId: string): Promise<string> => {
+  const user = await User.findById(userId);
+  const target = await User.findById(targetId);
+
+  if (!user || !target) throw new Error("User not found");
+
+  if (!user.subscribedTo.includes(target._id as any)) throw new Error("Not subscribed");
+
+  user.subscribedTo = user.subscribedTo.filter(id => id.toString() !== targetId);
+  target.subscribers -= 1;
+
+  await user.save();
+  await target.save();
+
+  return "Unsubscribed successfully";
+};
+
+export const getSubscribers = async (targetId: string) => {
+  const subscribers = await User.find({ subscribedTo: targetId }).select('username email');
+  return subscribers;
+};
+
+export const getSubscribedChannels = async (userId: string) => {
+  const user = await User.findById(userId).populate('subscribedTo', 'username email');
+  return user?.subscribedTo || [];
 };

@@ -6,6 +6,8 @@ export interface IUser extends Document {
   email: string;
   password: string;
   comparePassword(candidatePassword: string): Promise<boolean>;
+  subscribers: number;
+  subscribedTo: mongoose.Types.ObjectId[];
 }
 
 const userSchema = new Schema<IUser>(
@@ -13,6 +15,8 @@ const userSchema = new Schema<IUser>(
     username: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+       subscribers: { type: Number, default: 0 },
+    subscribedTo: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   },
   { timestamps: true }
 );
